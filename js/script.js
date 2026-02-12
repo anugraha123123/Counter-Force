@@ -1,91 +1,183 @@
-// js/script.js (updated: removed slider dependency, now fully keyboard-controlled; added friction for better gameplay)
+// js/script.js (fully rewritten with requestAnimationFrame, dt-based physics, smooth key controls, falling animation, real-time timer/score)
+let ctx;
+let canvas;
 let actionForce = 0;
 let counterForce = 0;
-let ctx;
-let ballPosition = 250; // Center of canvas width 500
-let velocity = 0;
+let ballPosition = 300;
+let ballY = 220;
+let velocityX = 0;
+let velocityY = 0;
 let score = 0;
-let time = 0;
-let gameInterval;
+let startTime = 0;
+let lastTime = 0;
+let animationId;
 let levelInterval;
-let timerInterval;
 let isGameRunning = false;
-
-function updateCounterValue() {
-    document.getElementById('counterValue').textContent = counterForce;
-}
+let isFalling = false;
+let leftPressed = false;
+let rightPressed = false;
+let level = 1;
+const canvasWidth = 600;
+const canvasHeight = 400;
+const centerX = canvasWidth / 2;
+const platformLeft = 120;
+const platformRight = 480;
+const mass = 1;
+const accelScale = 60; // pixels per sec^2 per N (tune for feel)
+const gravity = 800; // pixels per sec^2
+const drag = 0.99;
+const changeSpeed = 100; // N per sec hold key
+const pointsPerSec = 25;
+const balanceThreshold = 4;
 
 function startGame() {
     if (isGameRunning) {
         endGame();
     }
     isGameRunning = true;
-    actionForce = Math.floor(Math.random() * 201) - 100; // -100 to 100
+    isFalling = false;
+    level = 1;
+    actionForce = getRandomForce();
     counterForce = 0;
-    ballPosition = 250;
-    velocity = 0;
+    ballPosition = centerX;
+    ballY = 220;
+    velocityX = 0;
+    velocityY = 0;
     score = 0;
-    time = 0;
-    updateCounterValue();
+    startTime = performance.now();
+    lastTime = startTime;
+    document.getElementById('counterValue').textContent = counterForce;
     document.getElementById('gameResult').innerHTML = '';
-    document.getElementById('score').innerHTML = 'Score: 0';
-    document.getElementById('timer').innerHTML = 'Time: 0s';
+    document.getElementById('score').innerHTML = `Score: 0`;
+    document.getElementById('timer').innerHTML = `Time: 0s`;
     document.getElementById('startButton').textContent = 'Reset Game';
-    const canvas = document.getElementById('gameCanvas');
+    canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
-    
-    gameInterval = setInterval(gameLoop, 16); // ~60 FPS
-    levelInterval = setInterval(changeActionForce, 10000); // Change force every 10s
-    timerInterval = setInterval(updateTimer, 1000); // Update time/score every second
+    gameLoop();
+    levelInterval = setInterval(() => {
+        if (isGameRunning) {
+            level++;
+            actionForce = getRandomForce();
+            velocityX *= 0.5;
+        }
+    }, 10000);
 }
 
-function gameLoop() {
+function getRandomForce() {
+    const maxForce = 40 + level * 10;
+    return Math.floor(Math.random() * (2 * maxForce + 1)) - maxForce;
+}
+
+function gameLoop(currentTime = performance.now()) {
+    if (!isGameRunning) return;
+    const dt = Math.min((currentTime - lastTime) / 1000, 0.05); // cap dt for stability
+    lastTime = currentTime;
+
     const netForce = actionForce + counterForce;
-    velocity += netForce * 0.001; // Acceleration = netForce / mass (mass=1000)
-    velocity *= 0.98; // Friction damping for more realistic/stabilizable motion
-    ballPosition += velocity;
     
-    if (ballPosition < 100 || ballPosition > 400) { // Off platform edges
-        endGame();
+    // Keyboard input (smooth hold)
+    if (!isFalling) {
+        if (leftPressed) {
+            counterForce = Math.max(-120, counterForce - changeSpeed * dt);
+        }
+        if (rightPressed) {
+            counterForce = Math.min(120, counterForce + changeSpeed * dt);
+        }
     }
-    
-    drawGame();
+    document.getElementById('counterValue').textContent = Math.round(counterForce);
+
+    // Physics
+    if (!isFalling) {
+        // Horizontal physics on platform
+        velocityX += netForce * accelScale * dt / mass;
+        velocityX *= drag;
+        ballPosition += velocityX * dt;
+        
+        // Check if off platform
+        if (ballPosition < platformLeft || ballPosition > platformRight) {
+            isFalling = true;
+            velocityY = -50 * dt * 60; // small upward kick for realism
+        }
+    } else {
+        // Falling physics
+        velocityX *= drag;
+        velocityY += gravity * dt;
+        ballPosition += velocityX * dt;
+        ballY += velocityY * dt;
+        
+        // Game over if hit ground
+        if (ballY > canvasHeight) {
+            endGame();
+            return;
+        }
+    }
+
+    // Update timer and score (real-time, accurate)
+    const elapsed = Math.floor((currentTime - startTime) / 1000);
+    document.getElementById('timer').innerHTML = `Time: ${elapsed}s`;
+    if (Math.abs(netForce) < balanceThreshold) {
+        score += pointsPerSec * dt;
+    }
+    document.getElementById('score').innerHTML = `Score: ${Math.floor(score)}`;
+
+    drawGame(netForce);
+    animationId = requestAnimationFrame(gameLoop);
 }
 
-function drawGame() {
-    const canvas = document.getElementById('gameCanvas');
+function drawGame(netForce) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Platform
-    ctx.fillStyle = '#888';
-    ctx.fillRect(100, 200, 300, 20); // Platform from x=100 to 400
+    ctx.fillStyle = '#555';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(platformLeft, 235, platformRight - platformLeft, 25);
+    ctx.shadowBlur = 0;
     
-    // Ball (object)
-    ctx.fillStyle = '#ff0000';
+    // Ball with shadow
+    ctx.fillStyle = '#ff4444';
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowOffsetY = 3;
     ctx.beginPath();
-    ctx.arc(ballPosition, 190, 10, 0, Math.PI * 2);
+    ctx.arc(ballPosition, ballY, 12, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
     
-    // Force arrows (fixed for proper direction)
-    ctx.strokeStyle = '#007bff';
-    ctx.lineWidth = 2;
-    drawArrow(250, 100, actionForce); // Action
-    ctx.strokeStyle = '#ff8800';
-    drawArrow(250, 120, counterForce); // Counter
+    // Force arrows (from center)
+    const scale = 1.8;
+    drawArrow(centerX, 70, actionForce, '#007bff', 'Action');
+    drawArrow(centerX, 95, counterForce, '#ff8800', 'Counter');
+    const netColor = Math.abs(netForce) < balanceThreshold ? '#00ff88' : '#ff4400';
+    drawArrow(centerX, 120, netForce, netColor, 'Net');
     
     // Labels
     ctx.fillStyle = '#000';
+    ctx.font = 'bold 18px Arial';
+    ctx.fillText(`Action: ${actionForce} N`, 20, 55);
+    ctx.fillText(`Counter: ${Math.round(counterForce)} N`, 20, 80);
+    ctx.fillText(`Net: ${Math.round(netForce)} N`, 20, 105);
+    
+    ctx.font = 'bold 20px Arial';
+    if (isFalling) {
+        ctx.fillStyle = '#ff0000';
+        ctx.fillText('UNBALANCED! Ball falling off!', 120, 280);
+    } else {
+        ctx.fillStyle = '#333';
+        ctx.fillText('Keep balanced to stay on platform!', 100, 280);
+    }
+    
+    ctx.fillStyle = '#007bff';
     ctx.font = 'bold 16px Arial';
-    ctx.fillText(`Action Force: ${actionForce} N`, 10, 30);
-    ctx.fillText(`Counter Force: ${counterForce} N`, 10, 50);
-    ctx.fillText(`Net Force: ${actionForce + counterForce} N`, 10, 70);
-    ctx.fillText(`Keep the ball on the platform!`, 150, 250);
+    ctx.fillText(`Level: ${level}`, 20, canvasHeight - 20);
 }
 
-function drawArrow(centerX, y, force) {
-    const scale = 0.5; // Scale arrow length
+function drawArrow(centerX, y, force, color, label) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
     const absForce = Math.abs(force);
-    const arrowLength = absForce * scale;
+    const arrowLength = Math.min(absForce * 1.5, 120);
     let fromX, toX;
     if (force >= 0) {
         fromX = centerX - arrowLength / 2;
@@ -94,73 +186,56 @@ function drawArrow(centerX, y, force) {
         fromX = centerX + arrowLength / 2;
         toX = centerX - arrowLength / 2;
     }
+    // Shaft
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(fromX, y);
     ctx.lineTo(toX, y);
     ctx.stroke();
     // Arrowhead
-    const headLen = 10;
+    ctx.lineWidth = 3;
+    const headLen = 12;
     const dx = toX - fromX;
-    const dy = 0; // Horizontal
-    const angle = Math.atan2(dy, dx);
+    const angle = Math.atan2(0, dx);
     ctx.beginPath();
     ctx.moveTo(toX, y);
     ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), y - headLen * Math.sin(angle - Math.PI / 6));
-    ctx.moveTo(toX, y);
     ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), y - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
     ctx.stroke();
 }
 
-function updateTimer() {
-    if (!isGameRunning) return;
-    time++;
-    score += Math.abs(actionForce + counterForce) < 5 ? 10 : 0; // Bonus for close balance
-    document.getElementById('timer').innerHTML = `Time: ${time}s`;
-    document.getElementById('score').innerHTML = `Score: ${score}`;
-}
-
-function changeActionForce() {
-    if (!isGameRunning) return;
-    actionForce = Math.floor(Math.random() * 201) - 100;
-    velocity *= 0.5; // Dampen velocity on level change
-}
-
 function endGame() {
-    clearInterval(gameInterval);
+    cancelAnimationFrame(animationId);
     clearInterval(levelInterval);
-    clearInterval(timerInterval);
     isGameRunning = false;
-    document.getElementById('gameResult').innerHTML = `<strong style="color: red;">Game Over! Final Score: ${score}</strong>`;
+    const finalScore = Math.floor(score);
+    document.getElementById('gameResult').innerHTML = `<strong style="color: #ff4400; font-size: 24px;">Game Over! Final Score: ${finalScore} 🎮</strong><br><small>Tip: Hold arrow keys for smooth counter force adjustment.</small>`;
     document.getElementById('startButton').textContent = 'Start Game';
 }
 
 function initGameListeners() {
-    // Keyboard controls for counter force
     document.addEventListener('keydown', (e) => {
         if (!isGameRunning) return;
-        if (e.key === 'ArrowLeft') {
-            counterForce = Math.max(counterForce - 1, -100);
-        } else if (e.key === 'ArrowRight') {
-            counterForce = Math.min(counterForce + 1, 100);
-        }
-        updateCounterValue();
+        e.preventDefault();
+        if (e.key === 'ArrowLeft') leftPressed = true;
+        if (e.key === 'ArrowRight') rightPressed = true;
+    });
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft') leftPressed = false;
+        if (e.key === 'ArrowRight') rightPressed = false;
     });
 }
 
 // Quiz Logic (unchanged)
 function checkQuiz() {
-    const answers = {
-        q1: 'c',
-        q2: 'b',
-        q3: 'a'
-    };
+    const answers = { q1: 'c', q2: 'b', q3: 'a' };
     let score = 0;
-    const questions = ['q1', 'q2', 'q3'];
-    questions.forEach(q => {
+    ['q1', 'q2', 'q3'].forEach(q => {
         const selected = document.querySelector(`input[name="${q}"]:checked`);
-        if (selected && selected.value === answers[q]) {
-            score++;
-        }
+        if (selected && selected.value === answers[q]) score++;
     });
-    document.getElementById('result').innerHTML = `<strong>You scored ${score} out of 3!</strong>`;
+    document.getElementById('result').innerHTML = `<strong style="color: #007bff;">You scored ${score} out of 3! 🎉</strong>`;
 }

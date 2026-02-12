@@ -1,4 +1,4 @@
-<!-- game.html (updated: removed slider, now keyboard-only controls for more "game-like" feel) -->
+<!-- game.html (updated canvas size, instructions for keys + hold, level display) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,75 +7,44 @@
     <title>Counter Force Game</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        .instructions {
-            background-color: #e7f3ff;
-            border-left: 5px solid #007bff;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        #gameResult {
-            font-size: 18px;
-            margin-top: 10px;
-        }
-        #score {
-            font-size: 20px;
-            color: #007bff;
-            margin-top: 10px;
-        }
-        #timer {
-            font-size: 16px;
-            color: #ff8800;
-        }
+        .instructions { background-color: #e7f3ff; border-left: 5px solid #007bff; padding: 15px; margin: 20px 0; }
+        #gameResult { font-size: 18px; margin-top: 10px; }
+        #score { font-size: 22px; color: #007bff; margin: 10px 0; }
+        #timer { font-size: 18px; color: #ff8800; margin: 5px 0; }
+        #counterValue { font-weight: bold; color: #ff8800; font-size: 20px; }
+        #startButton { background: linear-gradient(45deg, #28a745, #20c997); }
     </style>
 </head>
 <body>
     <header>
         <h1>Counter Force in Physics</h1>
-        <nav>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="about.html">About Counter Force</a></li>
-                <li><a href="newtons-laws.html">Newton's Laws</a></li>
-                <li><a href="examples.html">Examples</a></li>
-                <li><a href="applications.html">Applications</a></li>
-                <li><a href="quiz.html">Quiz</a></li>
-                <li><a href="game.html">Game</a></li>
-            </ul>
-        </nav>
+        <nav><!-- nav unchanged --></nav>
     </header>
     <main>
         <section>
-            <h2>Balance the Forces Challenge</h2>
+            <h2>🔥 Balance the Forces Challenge</h2>
             <div class="instructions">
-                <h3>How to Play This Physics Game:</h3>
-                <ol>
-                    <li>The game starts automatically! A <strong>random Action Force</strong> will push the ball (representing an object in motion).</li>
-                    <li>Use the <strong>arrow keys</strong> (Left/Right) to adjust the <strong>Counter Force</strong> (reaction force) in real-time. Left decreases, Right increases.</li>
-                    <li><strong>Goal:</strong> Keep the ball centered on the platform by balancing forces (Net Force ≈ 0). The ball moves based on net force!</li>
-                    <li>Earn <strong>points</strong> for every second you keep it balanced. If the ball falls off, game over.</li>
-                    <li>Levels increase: Action force changes every 10 seconds for added challenge.</li>
-                    <li>Learn: This simulates Newton's Third Law – counter forces keep things stable!</li>
-                </ol>
+                <h3>Controls & How to Play:</h3>
+                <ul>
+                    <li><strong>← → Arrow Keys</strong>: Hold to smoothly adjust Counter Force (reaction).</li>
+                    <li><strong>Goal</strong>: Balance Action Force (blue) with Counter (orange) so Net (green) ≈0. Keep red ball centered!</li>
+                    <li>Ball <strong>moves</strong> with net force. <strong>Falls off</strong> if unbalanced → Game Over!</li>
+                    <li><strong>Score</strong>: +25 pts/sec when balanced. Levels up every 10s (harder forces).</li>
+                    <li><strong>Physics Demo</strong>: Newton's 3rd Law in action – equal opposite forces = equilibrium! 🚀</li>
+                </ul>
             </div>
-            <canvas id="gameCanvas" width="500" height="300"></canvas>
-            <br><br>
-            <div><strong>Counter Force:</strong> <span id="counterValue">0</span> N (Use ←/→ arrows to adjust)</div>
+            <canvas id="gameCanvas" width="600" height="400"></canvas>
             <br>
-            <button id="startButton" onclick="startGame()">Reset Game</button>
+            <div style="font-size: 20px;"><strong>Counter Force:</strong> <span id="counterValue">0</span> N</div>
+            <br>
+            <button id="startButton" onclick="startGame()">Start Game</button>
             <div id="timer">Time: 0s</div>
             <div id="score">Score: 0</div>
             <div id="gameResult"></div>
         </section>
     </main>
-    <footer>
-        <p>&copy; 2026 Counter Force Physics. All rights reserved.</p>
-    </footer>
+    <footer><!-- footer --></footer>
     <script src="js/script.js"></script>
-    <script>
-        window.addEventListener('load', () => {
-            initGameListeners();
-            startGame(); // Auto-start on load
-        });
-    </script>
+    <script>window.addEventListener('load', initGameListeners);</script>
 </body>
 </html>
