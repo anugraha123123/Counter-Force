@@ -1,4 +1,4 @@
-<!-- quiz.html -->
+<!-- quiz.html - Updated with immediate feedback on each question + final score -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +6,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Counter Force Quiz</title>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .question {
+            margin: 25px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 5px solid #6c757d;
+        }
+        .question p {
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        label:hover {
+            background: #e9ecef;
+        }
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+        .feedback {
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: none;
+        }
+        .correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #final-result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e9f7ff;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -22,36 +87,125 @@
             </ul>
         </nav>
     </header>
+
     <main>
         <section>
-            <h2>Take the Quiz</h2>
+            <h2>Counter Force Quiz</h2>
+            <p>Choose the correct answer for each question. You'll see feedback immediately after selecting an option.</p>
+
             <div id="quiz">
-                <div class="question">
-                    <p>1. What law describes counter forces?</p>
-                    <label><input type="radio" name="q1" value="a"> Newton's First Law</label><br>
-                    <label><input type="radio" name="q1" value="b"> Newton's Second Law</label><br>
-                    <label><input type="radio" name="q1" value="c"> Newton's Third Law</label><br>
+
+                <div class="question" id="q1">
+                    <p>1. What law describes counter forces (action-reaction pairs)?</p>
+                    <label><input type="radio" name="q1" value="a"> Newton's First Law</label>
+                    <label><input type="radio" name="q1" value="b"> Newton's Second Law</label>
+                    <label><input type="radio" name="q1" value="c"> Newton's Third Law</label>
+                    <div class="feedback" id="feedback1"></div>
                 </div>
-                <div class="question">
-                    <p>2. When a person jumps off a boat, the boat moves in the opposite direction due to?</p>
-                    <label><input type="radio" name="q2" value="a"> Gravity</label><br>
-                    <label><input type="radio" name="q2" value="b"> Counter Force</label><br>
-                    <label><input type="radio" name="q2" value="c"> Friction</label><br>
+
+                <div class="question" id="q2">
+                    <p>2. When you push on a wall, the wall pushes back with equal force. This is an example of:</p>
+                    <label><input type="radio" name="q2" value="a"> Inertia</label>
+                    <label><input type="radio" name="q2" value="b"> Counter force / reaction force</label>
+                    <label><input type="radio" name="q2" value="c"> Acceleration</label>
+                    <div class="feedback" id="feedback2"></div>
                 </div>
-                <div class="question">
-                    <p>3. Are action and reaction forces equal in magnitude?</p>
-                    <label><input type="radio" name="q3" value="a"> Yes</label><br>
-                    <label><input type="radio" name="q3" value="b"> No</label><br>
-                    <label><input type="radio" name="q3" value="c"> Sometimes</label><br>
+
+                <div class="question" id="q3">
+                    <p>3. A rocket moves forward because:</p>
+                    <label><input type="radio" name="q3" value="a"> The exhaust gases push backward on the rocket</label>
+                    <label><input type="radio" name="q3" value="b"> The rocket pushes backward on the exhaust gases</label>
+                    <label><input type="radio" name="q3" value="c"> The exhaust gases push forward on the rocket (reaction force)</label>
+                    <div class="feedback" id="feedback3"></div>
                 </div>
-                <button onclick="checkQuiz()">Submit Quiz</button>
+
+                <div class="question" id="q4">
+                    <p>4. Action and reaction forces act on:</p>
+                    <label><input type="radio" name="q4" value="a"> The same object</label>
+                    <label><input type="radio" name="q4" value="b"> Different objects</label>
+                    <label><input type="radio" name="q4" value="c"> Only moving objects</label>
+                    <div class="feedback" id="feedback4"></div>
+                </div>
+
             </div>
-            <div id="result"></div>
+
+            <button id="showScoreBtn" style="display:none;">Show Final Score</button>
+            <div id="final-result"></div>
+
         </section>
     </main>
+
     <footer>
-        <p>&copy; 2026 Counter Force Physics. All rights reserved.</p>
+        <p>© 2026 Counter Force Physics. All rights reserved.</p>
     </footer>
-    <script src="js/script.js"></script>
+
+    <script>
+        const correctAnswers = {
+            q1: 'c',
+            q2: 'b',
+            q3: 'c',
+            q4: 'b'
+        };
+
+        const explanations = {
+            q1: "Correct! Newton's Third Law states that for every action, there is an equal and opposite reaction.",
+            q2: "Correct! The wall pushes back with an equal counter force – this is Newton's Third Law in action.",
+            q3: "Correct! The rocket pushes on the gases backward → gases push rocket forward (reaction).",
+            q4: "Correct! Action and reaction forces act on two different objects, so they don't cancel each other out on the same body."
+        };
+
+        let answeredCount = 0;
+        const totalQuestions = 4;
+
+        document.querySelectorAll('input[type="radio"]').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionId = this.name;
+                const selectedValue = this.value;
+                const questionDiv = document.getElementById(questionId);
+                const feedbackDiv = document.getElementById('feedback' + questionId.replace('q', ''));
+
+                // Disable further changes on this question
+                questionDiv.querySelectorAll('input').forEach(inp => inp.disabled = true);
+
+                // Show feedback
+                if (selectedValue === correctAnswers[questionId]) {
+                    feedbackDiv.textContent = "Correct! " + explanations[questionId];
+                    feedbackDiv.className = "feedback correct";
+                } else {
+                    feedbackDiv.textContent = "Incorrect. " + explanations[questionId];
+                    feedbackDiv.className = "feedback incorrect";
+                }
+                feedbackDiv.style.display = "block";
+
+                answeredCount++;
+                if (answeredCount === totalQuestions) {
+                    document.getElementById('showScoreBtn').style.display = 'block';
+                }
+            });
+        });
+
+        document.getElementById('showScoreBtn').addEventListener('click', () => {
+            let score = 0;
+            Object.keys(correctAnswers).forEach(q => {
+                const selected = document.querySelector(`input[name="${q}"]:checked`);
+                if (selected && selected.value === correctAnswers[q]) {
+                    score++;
+                }
+            });
+
+            const percent = Math.round((score / totalQuestions) * 100);
+            let message = `You got ${score} out of ${totalQuestions} correct (${percent}%)!`;
+
+            if (score === totalQuestions) {
+                message += " Perfect! You're a Newton's Third Law master! 🚀";
+            } else if (score >= totalQuestions - 1) {
+                message += " Great job! Almost perfect.";
+            } else {
+                message += " Keep learning – counter forces are everywhere!";
+            }
+
+            document.getElementById('final-result').innerHTML = message;
+        });
+    </script>
 </body>
 </html>
