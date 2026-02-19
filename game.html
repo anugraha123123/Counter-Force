@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter Force Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .instructions {
+            background-color: #e7f3ff;
+            border-left: 5px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        #gameResult {
+            font-size: 18px;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        #score, #timer {
+            font-size: 18px;
+            margin: 8px 0;
+        }
+        #counterValue {
+            font-weight: bold;
+            color: #d63384;
+        }
+        #startButton {
+            padding: 10px 24px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        #startButton:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Counter Force in Physics</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About Counter Force</a></li>
+                <li><a href="newtons-laws.html">Newton's Laws</a></li>
+                <li><a href="examples.html">Examples</a></li>
+                <li><a href="applications.html">Applications</a></li>
+                <li><a href="quiz.html">Quiz</a></li>
+                <li><a href="game.html">Game</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Balance the Forces Game</h2>
+
+            <div class="instructions">
+                <h3>How to play</h3>
+                <p>Use the <strong>left</strong> and <strong>right arrow keys</strong> to apply counter force.</p>
+                <p>Goal: Keep the red ball in the middle of the platform as long as possible.</p>
+                <p>The blue arrow is the pushing (action) force — you fight it with your orange counter force.</p>
+                <p>Score increases when forces are balanced (net force near zero).</p>
+            </div>
+
+            <canvas id="gameCanvas" width="500" height="300"></canvas>
+
+            <div style="margin-top: 20px;">
+                <strong>Counter Force:</strong> <span id="counterValue">0</span> N
+            </div>
+
+            <button id="startButton">Start / Reset Game</button>
+
+            <div id="timer">Time: 0 s</div>
+            <div id="score">Score: 0</div>
+            <div id="gameResult"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 Counter Force Physics. All rights reserved.</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+    <script>
+        // Auto-init keyboard listeners when page loads
+        window.addEventListener('load', initGameListeners);
+    </script>
+</body>
+</html>
