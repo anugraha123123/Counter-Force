@@ -1,133 +1,155 @@
+// js/script.js (complete and working version for the game)
 let actionForce = 0;
 let counterForce = 0;
 let ctx;
-let ballX = 250;
+let ballPosition = 250;
 let velocity = 0;
 let score = 0;
 let time = 0;
-let isRunning = false;
-let timerId, gameLoopId;
+let gameInterval;
+let levelInterval;
+let timerInterval;
+let isGameRunning = false;
 
-const canvas = document.getElementById('gameCanvas');
-const ctxCanvas = canvas.getContext('2d');
-const center = canvas.width / 2;
-const platformLeft = 80;
-const platformRight = 420;
+function updateCounterValue() {
+    document.getElementById('counterValue').textContent = counterForce;
+}
 
 function startGame() {
-    if (isRunning) {
-        clearInterval(timerId);
-        cancelAnimationFrame(gameLoopId);
+    if (isGameRunning) {
+        endGame();
     }
-
-    actionForce = Math.floor(Math.random() * 81) - 40; // -40 to +40
+    isGameRunning = true;
+    actionForce = Math.floor(Math.random() * 201) - 100;
     counterForce = 0;
-    ballX = center;
+    ballPosition = 250;
     velocity = 0;
     score = 0;
     time = 0;
-
-    document.getElementById('counterValue').textContent = 0;
-    document.getElementById('score').textContent = 'Score: 0';
-    document.getElementById('timer').textContent = 'Time: 0 s';
+    updateCounterValue();
     document.getElementById('gameResult').innerHTML = '';
+    document.getElementById('score').innerHTML = 'Score: 0';
+    document.getElementById('timer').innerHTML = 'Time: 0s';
     document.getElementById('startButton').textContent = 'Reset Game';
-
-    isRunning = true;
-    timerId = setInterval(updateTimer, 1000);
-    gameLoop();
-}
-
-function updateTimer() {
-    if (!isRunning) return;
-    time++;
-    document.getElementById('timer').textContent = `Time: ${time} s`;
-
-    // Bonus points when well balanced
-    if (Math.abs(actionForce + counterForce) < 8) {
-        score += 15;
-        document.getElementById('score').textContent = `Score: ${score}`;
-    }
+    const canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    
+    gameInterval = setInterval(gameLoop, 16);
+    levelInterval = setInterval(changeActionForce, 10000);
+    timerInterval = setInterval(updateTimer, 1000);
 }
 
 function gameLoop() {
-    if (!isRunning) return;
-
-    const net = actionForce + counterForce;
-
-    // Very gentle physics
-    velocity += net * 0.004;           // very small acceleration
-    velocity *= 0.93;                  // strong damping
-    ballX += velocity * 18;            // slow movement
-
-    // Game over
-    if (ballX < platformLeft - 30 || ballX > platformRight + 30) {
-        isRunning = false;
-        clearInterval(timerId);
-        document.getElementById('gameResult').innerHTML =
-            `<span style="color:#dc3545; font-size:1.3em;">Game Over! Final score: ${score}</span>`;
-        document.getElementById('startButton').textContent = 'Start Game';
-        return;
+    const netForce = actionForce + counterForce;
+    velocity += netForce * 0.001;
+    velocity *= 0.98;
+    ballPosition += velocity;
+    
+    if (ballPosition < 100 || ballPosition > 400) {
+        endGame();
     }
-
-    draw();
-    gameLoopId = requestAnimationFrame(gameLoop);
+    
+    drawGame();
 }
 
-function draw() {
-    ctxCanvas.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Platform
-    ctxCanvas.fillStyle = '#6c757d';
-    ctxCanvas.fillRect(platformLeft, 220, platformRight - platformLeft, 25);
-
-    // Ball
-    ctxCanvas.fillStyle = '#dc3545';
-    ctxCanvas.beginPath();
-    ctxCanvas.arc(ballX, 210, 14, 0, Math.PI * 2);
-    ctxCanvas.fill();
-
-    // Force arrows
-    drawArrow(center - 80, 60, actionForce,   '#0d6efd', 'Action');
-    drawArrow(center - 80, 95, counterForce,  '#fd7e14', 'Counter');
-    const net = actionForce + counterForce;
-    drawArrow(center - 80, 130, net, net < 12 && net > -12 ? '#198754' : '#dc3545', 'Net');
-
-    document.getElementById('counterValue').textContent = Math.round(counterForce);
+function drawGame() {
+    const canvas = document.getElementById('gameCanvas');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = '#888';
+    ctx.fillRect(100, 200, 300, 20);
+    
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(ballPosition, 190, 10, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.strokeStyle = '#007bff';
+    ctx.lineWidth = 2;
+    drawArrow(250, 100, actionForce);
+    ctx.strokeStyle = '#ff8800';
+    drawArrow(250, 120, counterForce);
+    
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText(`Action Force: ${actionForce} N`, 10, 30);
+    ctx.fillText(`Counter Force: ${counterForce} N`, 10, 50);
+    ctx.fillText(`Net Force: ${actionForce + counterForce} N`, 10, 70);
+    ctx.fillText(`Keep the ball on the platform!`, 150, 250);
 }
 
-function drawArrow(x, y, val, color, label) {
-    const len = Math.min(Math.abs(val) * 1.8, 140);
-    const dir = val >= 0 ? 1 : -1;
-
-    ctxCanvas.strokeStyle = color;
-    ctxCanvas.lineWidth = 5;
-    ctxCanvas.beginPath();
-    ctxCanvas.moveTo(x, y);
-    ctxCanvas.lineTo(x + len * dir, y);
-    ctxCanvas.stroke();
-
-    // arrow head
-    ctxCanvas.beginPath();
-    ctxCanvas.moveTo(x + len * dir, y);
-    ctxCanvas.lineTo(x + (len - 14) * dir, y - 9);
-    ctxCanvas.lineTo(x + (len - 14) * dir, y + 9);
-    ctxCanvas.closePath();
-    ctxCanvas.fillStyle = color;
-    ctxCanvas.fill();
-
-    ctxCanvas.fillStyle = '#333';
-    ctxCanvas.font = '14px Arial';
-    ctxCanvas.fillText(`${label}: ${Math.round(val)} N`, x - 20, y - 12);
+function drawArrow(centerX, y, force) {
+    const scale = 0.5;
+    const absForce = Math.abs(force);
+    const arrowLength = absForce * scale;
+    let fromX, toX;
+    if (force >= 0) {
+        fromX = centerX - arrowLength / 2;
+        toX = centerX + arrowLength / 2;
+    } else {
+        fromX = centerX + arrowLength / 2;
+        toX = centerX - arrowLength / 2;
+    }
+    ctx.beginPath();
+    ctx.moveTo(fromX, y);
+    ctx.lineTo(toX, y);
+    ctx.stroke();
+    const headLen = 10;
+    const dx = toX - fromX;
+    const angle = Math.atan2(0, dx);
+    ctx.beginPath();
+    ctx.moveTo(toX, y);
+    ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), y - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, y);
+    ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), y - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
 }
 
-function initGameListeners() {
-    document.addEventListener('keydown', e => {
-        if (!isRunning) return;
-        if (e.key === 'ArrowLeft')  counterForce -= 1.5;
-        if (e.key === 'ArrowRight') counterForce += 1.5;
-        counterForce = Math.max(-120, Math.min(120, counterForce));
-    });
+function updateTimer() {
+    if (!isGameRunning) return;
+    time++;
+    score += Math.abs(actionForce + counterForce) < 5 ? 10 : 0;
+    document.getElementById('timer').innerHTML = `Time: ${time}s`;
+    document.getElementById('score').innerHTML = `Score: ${score}`;
+}
+
+function changeActionForce() {
+    if (!isGameRunning) return;
+    actionForce = Math.floor(Math.random() * 201) - 100;
+    velocity *= 0.5;
+}
+
+function endGame() {
+    clearInterval(gameInterval);
+    clearInterval(levelInterval);
+    clearInterval(timerInterval);
+    isGameRunning = false;
+    document.getElementById('gameResult').innerHTML = `<strong style="color: red;">Game Over! Final Score: ${score}</strong>`;
+    document.getElementById('startButton').textContent = 'Start Game';
 }
 
 document.getElementById('startButton').addEventListener('click', startGame);
+
+let leftPressed = false;
+let rightPressed = false;
+
+document.addEventListener('keydown', (e) => {
+    if (!isGameRunning) return;
+    if (e.key === 'ArrowLeft') leftPressed = true;
+    if (e.key === 'ArrowRight') rightPressed = true;
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft') leftPressed = false;
+    if (e.key === 'ArrowRight') rightPressed = false;
+});
+
+function updateKeys() {
+    if (leftPressed) counterForce = Math.max(counterForce - 1, -100);
+    if (rightPressed) counterForce = Math.min(counterForce + 1, 100);
+    updateCounterValue();
+}
+
+// Call updateKeys in gameLoop
+// Note: Add this line inside gameLoop function before velocity calculation:
+updateKeys();
