@@ -3,89 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Counter Force Game</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>Counter Force Game - Debug Version</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f8ff;
+            text-align: center;
+        }
+        header {
+            background: #007bff;
+            color: white;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+        }
+        nav li {
+            display: inline;
+            margin: 0 15px;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        canvas {
+            border: 4px solid #007bff;
+            background: white;
+            border-radius: 8px;
+            display: block;
+            margin: 20px auto;
+        }
         .instructions {
-            background-color: #e7f3ff;
+            background: #e7f3ff;
             border-left: 5px solid #007bff;
             padding: 15px;
-            margin: 20px 0;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: left;
             border-radius: 6px;
         }
-        #gameResult {
+        button {
+            padding: 14px 32px;
             font-size: 18px;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-        #score, #timer {
-            font-size: 18px;
-            margin: 8px 0;
-        }
-        #counterValue {
-            font-weight: bold;
-            color: #d63384;
-        }
-        #startButton {
-            padding: 10px 24px;
-            font-size: 16px;
-            background-color: #28a745;
+            background: #28a745;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
+            margin: 15px 0;
         }
-        #startButton:hover {
-            background-color: #218838;
+        button:hover { background: #218838; }
+        #status {
+            font-size: 18px;
+            margin: 15px 0;
+            min-height: 40px;
+            color: #333;
+        }
+        #debug {
+            font-family: monospace;
+            background: #fff3cd;
+            padding: 10px;
+            border: 1px solid #ffeeba;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: left;
+            white-space: pre-wrap;
         }
     </style>
 </head>
 <body>
+
     <header>
-        <h1>Counter Force in Physics</h1>
+        <h1>Counter Force Game</h1>
         <nav>
             <ul>
                 <li><a href="index.html">Home</a></li>
-                <li><a href="about.html">About Counter Force</a></li>
-                <li><a href="newtons-laws.html">Newton's Laws</a></li>
-                <li><a href="examples.html">Examples</a></li>
-                <li><a href="applications.html">Applications</a></li>
+                <li><a href="about.html">About</a></li>
                 <li><a href="quiz.html">Quiz</a></li>
                 <li><a href="game.html">Game</a></li>
             </ul>
         </nav>
     </header>
 
-    <main>
-        <section>
-            <h2>Balance the Forces Game</h2>
+    <div class="instructions">
+        <h3>How to play</h3>
+        <p>1. Click the green button below</p>
+        <p>2. Hold LEFT ARROW or RIGHT ARROW to balance the force</p>
+        <p>Goal: Keep red ball near center</p>
+    </div>
 
-            <div class="instructions">
-                <h3>How to play</h3>
-                <p>Use the <strong>left</strong> and <strong>right arrow keys</strong> to apply counter force.</p>
-                <p>Goal: Keep the red ball in the middle of the platform as long as possible.</p>
-                <p>The blue arrow is the pushing (action) force — you fight it with your orange counter force.</p>
-                <p>Score increases when forces are balanced (net force near zero).</p>
-            </div>
+    <canvas id="canvas" width="500" height="300"></canvas>
 
-            <canvas id="gameCanvas" width="500" height="300"></canvas>
+    <button id="startBtn">Start Game</button>
 
-            <div style="margin-top: 20px;">
-                <strong>Counter Force:</strong> <span id="counterValue">0</span> N
-            </div>
+    <div id="status">Waiting for you to click Start...</div>
+    <div id="debug">Debug log will appear here</div>
 
-            <button id="startButton">Start / Reset Game</button>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const center = canvas.width / 2;
+        const status = document.getElementById('status');
+        const debug = document.getElementById('debug');
 
-            <div id="timer">Time: 0 s</div>
-            <div id="score">Score: 0</div>
-            <div id="gameResult"></div>
-        </section>
-    </main>
+        let running = false;
+        let ballX = center;
+        let velocity = 0;
+        let counterForce = 0;
+        let actionForce = 40;
 
-    <footer>
-        <p>© 2026 Counter Force Physics. All rights reserved.</p>
-    </footer>
+        let leftDown = false;
+        let rightDown = false;
 
-    <script src="js/script.js"></script>
+        function log(msg) {
+            debug.textContent += msg + '\n';
+            console.log(msg);
+        }
+
+        // Start button
+        document.getElementById('startBtn').addEventListener('click', () => {
+            log('Start button clicked');
+
+            if (running) {
+                running = false;
+                status.textContent = "Game stopped. Click to restart.";
+                document.getElementById('startBtn').textContent = "Start Game";
+                log('Game was running → stopped');
+                return;
+            }
+
+            // Reset game state
+            actionForce = (Math.random() > 0.5 ? 1 : -1) * (30 + Math.random() * 60);
+            counterForce = 0;
+            ballX = center;
+            velocity = 0;
+            running = true;
+
+            status.textContent = "Game started! Use ← → arrows";
+            document.getElementById('startBtn').textContent = "Stop Game";
+            log(`Game reset. Initial action force: ${actionForce}`);
+
+            // Start loop
+            requestAnimationFrame(gameLoop);
+        });
+
+        // Keyboard controls
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft')  leftDown = true;
+            if (e.key === 'ArrowRight') rightDown = true;
+        });
+
+        window.addEventListener('keyup', e => {
+            if (e.key === 'ArrowLeft')  leftDown = false;
+            if (e.key === 'ArrowRight') rightDown = false;
+        });
+
+        function gameLoop() {
+            if (!running) {
+                log('Game loop stopped');
+                return;
+            }
+
+            // Update counter force
+            if (leftDown)  counterForce -= 1.5;
+            if (rightDown) counterForce += 1.5;
+            counterForce = Math.max(-150, Math.min(150, counterForce));
+
+            // Very gentle physics
+            const net = actionForce + counterForce;
+            velocity += net * 0.003;     // extremely slow acceleration
+            velocity *= 0.96;            // strong damping
+            ballX += velocity * 10;      // slow movement
+
+            // Check game over
+            if (ballX < 40 || ballX > 460) {
+                running = false;
+                status.innerHTML = `<span style="color:#dc3545">Game Over! Ball fell off.</span>`;
+                document.getElementById('startBtn').textContent = "Start Game";
+                log('Game over - ball off platform');
+                return;
+            }
+
+            // Draw
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Platform
+            ctx.fillStyle = "#6c757d";
+            ctx.fillRect(40, 230, 420, 30);
+
+            // Ball
+            ctx.fillStyle = "#dc3545";
+            ctx.beginPath();
+            ctx.arc(ballX, 215, 16, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Arrows
+            drawArrow(center - 120, 60, actionForce, "#0d6efd", "Push");
+            drawArrow(center - 120, 100, counterForce, "#fd7e14", "Counter");
+            const netColor = Math.abs(net) < 12 ? "#198754" : "#dc3545";
+            drawArrow(center - 120, 140, net, netColor, "Net");
+
+            // Update status
+            status.textContent = `Counter: ${Math.round(counterForce)} N   |   Net: ${Math.round(net)} N`;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawArrow(x, y, value, color, label) {
+            const len = Math.min(Math.abs(value) * 1.6, 140);
+            const dir = value >= 0 ? 1 : -1;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + len * dir, y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + len * dir, y);
+            ctx.lineTo(x + (len - 14) * dir, y - 9);
+            ctx.lineTo(x + (len - 14) * dir, y + 9);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            ctx.fillStyle = "#333";
+            ctx.font = "14px Arial";
+            ctx.fillText(`${label}: ${Math.round(value)}`, x - 10, y - 12);
+        }
+    </script>
 </body>
 </html>
